@@ -1,29 +1,91 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSave: (settings: any) => void;
+  currentSettings: any;
+  detectedLocation?: string;
 }
 
-export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+export default function SettingsModal({ isOpen, onClose, onSave, currentSettings, detectedLocation }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<'location' | 'method'>('location');
-  const [locationType, setLocationType] = useState<'auto' | 'manual'>('auto');
-  const [timeFormat, setTimeFormat] = useState<'12' | '24'>('12');
+  const [locationType, setLocationType] = useState<'auto' | 'manual'>(currentSettings.locationType || 'auto');
+  const [timeFormat, setTimeFormat] = useState<'12' | '24'>(currentSettings.timeFormat || '12');
+  const [juristicMethod, setJuristicMethod] = useState(currentSettings.juristicMethod || '1'); // 1 = Hanafi, 0 = Standard
+  const [calculationMethod, setCalculationMethod] = useState(currentSettings.calculationMethod || '1'); // 1 = Karachi
+  const [offsets, setOffsets] = useState<Record<string, number>>(currentSettings.offsets || {
+    Imsak: 0, Fajr: 0, Sunrise: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Sunset: 0, Isha: 0, Midnight: 0
+  });
   const [isTimeAdjustmentOn, setIsTimeAdjustmentOn] = useState(false);
+
+  const getTuneString = (offs: Record<string, number>) => {
+    return `${offs.Imsak},${offs.Fajr},${offs.Sunrise},${offs.Dhuhr},${offs.Asr},${offs.Maghrib},${offs.Sunset},${offs.Isha},${offs.Midnight}`;
+  };
 
   const [isCountryOpen, setIsCountryOpen] = useState(false);
   const [isCityOpen, setIsCityOpen] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
   const [citySearch, setCitySearch] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState('Oman');
-  const [selectedCity, setSelectedCity] = useState('Hayma');
+  
+  const [countries, setCountries] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState(currentSettings.country || 'Bangladesh');
+  const [selectedCity, setSelectedCity] = useState(currentSettings.city || 'Dhaka');
+  const [loadingLocations, setLoadingLocations] = useState(false);
 
-  const countries = ['Afghanistan', 'Albania', 'Algeria', 'American Samoa', 'Andorra', 'Angola', 'Anguilla', 'Bangladesh', 'Oman', 'United Kingdom', 'United States'];
-  const cities = ['Hayma', 'Dhaka', 'Chittagong', 'Siddhirganj', 'London', 'New York'];
+  // Fetch countries on mount
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${apiUrl}/locations/countries`);
+        const data = await res.json();
+        setCountries(data);
+      } catch (err) {
+        console.error('Failed to fetch countries');
+      }
+    };
+    fetchCountries();
+  }, []);
+
+  // Fetch cities when country changes
+  useEffect(() => {
+    if (!selectedCountry) return;
+    const fetchCities = async () => {
+      setLoadingLocations(true);
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${apiUrl}/locations/cities?country=${selectedCountry}`);
+        const data = await res.json();
+        setCities(data);
+      } catch (err) {
+        console.error('Failed to fetch cities');
+        setCities([]);
+      } finally {
+        setLoadingLocations(false);
+      }
+    };
+    fetchCities();
+  }, [selectedCountry]);
 
   const filteredCountries = countries.filter(c => c.toLowerCase().includes(countrySearch.toLowerCase()));
   const filteredCities = cities.filter(c => c.toLowerCase().includes(citySearch.toLowerCase()));
+
+  const handleSave = () => {
+    onSave({
+      locationType,
+      country: selectedCountry,
+      city: selectedCity,
+      timeFormat,
+      juristicMethod,
+      calculationMethod,
+      offsets,
+      tune: getTuneString(offsets)
+    });
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -87,7 +149,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <span className="font-bold text-gray-800 dark:text-gray-200">Auto Location</span>
                       <i className="fa-solid fa-crosshairs text-gray-400 dark:text-gray-600"></i>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Hayma', Oman</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{detectedLocation || 'Detecting...'}</p>
                   </div>
                 </label>
 
@@ -152,21 +214,22 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">Select City</label>
                         <button 
                           type="button"
+                          disabled={loadingLocations}
                           onClick={() => { setIsCityOpen(!isCityOpen); setIsCountryOpen(false); }}
-                          className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-200 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className={`w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-200 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-primary-500 ${loadingLocations ? 'opacity-50' : ''}`}
                         >
-                          <span>{selectedCity}</span>
+                          <span>{loadingLocations ? 'Loading cities...' : selectedCity}</span>
                           <i className={`fa-solid fa-chevron-down text-gray-400 transition-transform ${isCityOpen ? 'rotate-180' : ''}`}></i>
                         </button>
 
-                        {isCityOpen && (
+                        {isCityOpen && !loadingLocations && (
                           <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
                             <div className="p-3 border-b border-gray-100 dark:border-gray-700">
                               <div className="relative">
                                 <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                                 <input 
                                   type="text" 
-                                  placeholder="Search..." 
+                                  placeholder="Search city..." 
                                   value={citySearch}
                                   onChange={(e) => setCitySearch(e.target.value)}
                                   className="w-full pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 dark:text-gray-200"
@@ -174,15 +237,19 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                               </div>
                             </div>
                             <ul className="max-h-48 overflow-y-auto py-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
-                              {filteredCities.map(city => (
-                                <li 
-                                  key={city}
-                                  onClick={() => { setSelectedCity(city); setIsCityOpen(false); }}
-                                  className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${selectedCity === city ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}
-                                >
-                                  {city}
-                                </li>
-                              ))}
+                              {filteredCities.length > 0 ? (
+                                filteredCities.map(city => (
+                                  <li 
+                                    key={city}
+                                    onClick={() => { setSelectedCity(city); setIsCityOpen(false); }}
+                                    className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${selectedCity === city ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}
+                                  >
+                                    {city}
+                                  </li>
+                                ))
+                              ) : (
+                                <li className="px-4 py-3 text-xs text-gray-500 text-center italic">No cities found</li>
+                              )}
                             </ul>
                           </div>
                         )}
@@ -196,9 +263,13 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <div>
                   <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Juristic Method</label>
                   <div className="relative">
-                    <select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none">
-                      <option>Standard (Shafi, Maliki, Hambali)</option>
-                      <option>Hanafi</option>
+                    <select 
+                      value={juristicMethod}
+                      onChange={(e) => setJuristicMethod(e.target.value)}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none"
+                    >
+                      <option value="0">Standard (Shafi, Maliki, Hambali)</option>
+                      <option value="1">Hanafi</option>
                     </select>
                     <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                   </div>
@@ -207,23 +278,63 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <div>
                   <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Calculation Method</label>
                   <div className="relative">
-                    <select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none">
-                      <option>Karachi</option>
-                      <option>University of Islamic Sciences, Karachi</option>
-                      <option>Islamic Society of North America (ISNA)</option>
+                    <select 
+                      value={calculationMethod}
+                      onChange={(e) => setCalculationMethod(e.target.value)}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none"
+                    >
+                      <option value="1">University of Islamic Sciences, Karachi</option>
+                      <option value="2">Islamic Society of North America (ISNA)</option>
+                      <option value="3">Muslim World League</option>
+                      <option value="4">Umm Al-Qura University, Makkah</option>
+                      <option value="5">Egyptian General Authority of Survey</option>
+                      <option value="7">Institute of Geophysics, University of Tehran</option>
+                      <option value="8">Gulf Region</option>
+                      <option value="9">Kuwait</option>
+                      <option value="10">Qatar</option>
+                      <option value="11">Majlis Ugama Islam Singapura, Singapore</option>
+                      <option value="12">Union Organization islamic de France</option>
+                      <option value="13">Diyanet İşleri Başkanlığı, Turkey</option>
                     </select>
                     <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Time Adjustment</span>
-                  <button 
-                    onClick={() => setIsTimeAdjustmentOn(!isTimeAdjustmentOn)}
-                    className={`w-11 h-6 rounded-full relative transition-colors ${isTimeAdjustmentOn ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-700'}`}
-                  >
-                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isTimeAdjustmentOn ? 'left-6' : 'left-1'}`}></div>
-                  </button>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Time Adjustment</span>
+                    <button 
+                      onClick={() => setIsTimeAdjustmentOn(!isTimeAdjustmentOn)}
+                      className={`w-11 h-6 rounded-full relative transition-colors ${isTimeAdjustmentOn ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isTimeAdjustmentOn ? 'left-6' : 'left-1'}`}></div>
+                    </button>
+                  </div>
+
+                  {isTimeAdjustmentOn && (
+                    <div className="grid grid-cols-2 gap-3 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 max-h-[300px] overflow-y-auto">
+                      {Object.keys(offsets).map((p) => (
+                        <div key={p} className="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-100 dark:border-gray-700">
+                          <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">{p}</span>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => setOffsets(prev => ({ ...prev, [p]: prev[p] - 1 }))}
+                              className="w-5 h-5 flex items-center justify-center rounded bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200"
+                            >
+                              <i className="fa-solid fa-minus text-[9px]"></i>
+                            </button>
+                            <span className="text-xs font-bold w-6 text-center text-gray-800 dark:text-white">{offsets[p] > 0 ? `+${offsets[p]}` : offsets[p]}</span>
+                            <button 
+                              onClick={() => setOffsets(prev => ({ ...prev, [p]: prev[p] + 1 }))}
+                              className="w-5 h-5 flex items-center justify-center rounded bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200"
+                            >
+                              <i className="fa-solid fa-plus text-[9px]"></i>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between py-2">
@@ -256,7 +367,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               Cancel
             </button>
             <button 
-              onClick={onClose}
+              onClick={handleSave}
               className="px-8 py-3 rounded-2xl bg-primary-700 dark:bg-primary-600 text-white font-bold hover:bg-primary-800 dark:hover:bg-primary-700 transition-shadow shadow-lg shadow-primary-700/20 dark:shadow-primary-900/40 min-w-[140px]"
             >
               Done
