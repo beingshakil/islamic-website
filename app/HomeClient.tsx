@@ -196,7 +196,7 @@ export default function HomeClient({ initialHadith, initialDua, initialPrayerDat
         }
 
         const res = await fetch(`${apiUrl}/prayer-times?${prayerQuery}`);
-        if (!res.ok) throw new Error('Prayer times fetch failed');
+        if (!res.ok) throw new Error(`Prayer times fetch failed: ${res.status}`);
         const json = await res.json();
         
         setPrayerData(json);

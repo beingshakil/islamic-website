@@ -1,5 +1,5 @@
 "use client";
-import { useState, use } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import SettingsModal from '@/components/SettingsModal';
 
@@ -16,12 +16,96 @@ export default function WaqtPage({ params }: { params: Promise<{ waqt: string }>
     tune: ''
   });
 
+  const [prayerData, setPrayerData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedSettings = localStorage.getItem('islamic-website-settings');
+      if (savedSettings) {
+        setUserSettings(JSON.parse(savedSettings));
+      }
+    } catch (e) {
+      console.error('Error loading settings:', e);
+    } finally {
+      setSettingsLoaded(true);
+    }
+  }, []);
+
   const handleSettingsSave = (newSettings: any) => {
     setUserSettings(newSettings);
     localStorage.setItem('islamic-website-settings', JSON.stringify(newSettings));
   };
 
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    
+    const fetchPrayerTimes = async () => {
+      setLoading(true);
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        const query = `city=${userSettings.city}&country=${userSettings.country}&school=${userSettings.juristicMethod}&method=${userSettings.calculationMethod}&tune=${userSettings.tune || ''}`;
+        const res = await fetch(`${apiUrl}/prayer-times?${query}`);
+        if (res.ok) {
+          const json = await res.json();
+          setPrayerData(json);
+        }
+      } catch (error) {
+        console.error('Error fetching prayer times:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPrayerTimes();
+  }, [settingsLoaded, userSettings.city, userSettings.country, userSettings.juristicMethod, userSettings.calculationMethod]);
+
   const waqtName = waqt.charAt(0).toUpperCase() + waqt.slice(1);
+
+  const formatTime = (timeStr: string) => {
+    if (!timeStr || timeStr === '--:--') return timeStr;
+    if (userSettings.timeFormat === '24') return timeStr;
+    
+    const [hours, minutes] = timeStr.split(':');
+    let h = parseInt(hours);
+    const m = minutes;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${h}:${m} ${ampm}`;
+  };
+
+  const subtractOneMinute = (timeStr: string) => {
+    if (!timeStr || timeStr === '--:--') return timeStr;
+    const [h, m] = timeStr.split(':').map(Number);
+    let totalMinutes = h * 60 + m - 1;
+    if (totalMinutes < 0) totalMinutes += 24 * 60;
+    const newH = Math.floor(totalMinutes / 60);
+    const newM = totalMinutes % 60;
+    return `${newH.toString().padStart(2, '0')}:${newM.toString().padStart(2, '0')}`;
+  };
+
+  const getWaqtRange = () => {
+    if (!prayerData) return { start: '--:--', end: '--:--' };
+    const timings = prayerData.timings;
+    
+    const start = timings[waqtName];
+    let endRaw = '--:--';
+    
+    if (waqtName === 'Fajr') endRaw = timings['Sunrise'];
+    else if (waqtName === 'Dhuhr') endRaw = timings['Asr'];
+    else if (waqtName === 'Asr') endRaw = timings['Sunset'];
+    else if (waqtName === 'Maghrib') endRaw = timings['Isha'];
+    else if (waqtName === 'Isha') endRaw = timings['Fajr']; 
+    
+    return { 
+      start: formatTime(start), 
+      end: formatTime(subtractOneMinute(endRaw)) 
+    };
+  };
+
+  const { start, end } = getWaqtRange();
 
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
@@ -31,20 +115,16 @@ export default function WaqtPage({ params }: { params: Promise<{ waqt: string }>
 
   const faqs = [
     {
-      q: `When is ${waqtName} time in Dhaka today?`,
-      a: `Today in Dhaka, Bangladesh ${waqtName} starts at 3:30 PM (after Dhuhr time ends) and ends at 6:22 PM (before sunset).`
+      q: `When is ${waqtName} time in ${userSettings.city} today?`,
+      a: `Today in ${userSettings.city}, ${userSettings.country} ${waqtName} starts at ${start} and ends at ${end} (before the next prayer starts).`
     },
     {
-      q: `How long after Dhuhr can ${waqtName} be prayed in Dhaka?`,
-      a: `${waqtName} prayer can be performed immediately after the Dhuhr time ends until the sun begins to set. However, it is recommended to pray within the preferred time.`
+      q: `Can ${waqtName} be prayed after its time ends?`,
+      a: `Performing prayers on time is obligatory. If a prayer is missed, it must be performed as Qaza as soon as possible, but it should not be intentionally delayed beyond its prescribed time.`
     },
     {
       q: `How many Rakats are there in ${waqtName} prayer?`,
-      a: `There are 4 Rakats of Fard (obligatory) prayer in ${waqtName}. Depending on the specific prayer, there might be Sunnah Rakats before or after.`
-    },
-    {
-      q: `What is the difference between ${waqtName} and Salatul Wusta?`,
-      a: `According to many scholars, Salatul Wusta (the Middle Prayer) mentioned in the Quran refers to the Asr prayer, emphasizing its importance.`
+      a: `Obligatory (Fard) Rakats for ${waqtName}: ${waqtName === 'Fajr' ? '2' : waqtName === 'Maghrib' ? '3' : '4'} Rakats.`
     }
   ];
 
@@ -59,7 +139,6 @@ export default function WaqtPage({ params }: { params: Promise<{ waqt: string }>
       
       {/* 1. TOP HEADER SECTION */}
       <section className="bg-white dark:bg-[#0A2B20] pt-12 pb-20 text-center border-b border-gray-100 dark:border-primary-900 shadow-[0_4px_20px_rgb(0,0,0,0.02)] relative overflow-hidden">
-        {/* Subtle decorative gradient */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full bg-gradient-to-b from-primary-50/50 to-transparent pointer-events-none"></div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -67,10 +146,10 @@ export default function WaqtPage({ params }: { params: Promise<{ waqt: string }>
             <i className="fa-regular fa-sun text-2xl"></i>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-charcoal dark:text-white mb-4 tracking-tight">
-            {waqtName} Prayer Time in Dhaka
+            {waqtName} Prayer Time in {userSettings.city}
           </h1>
           <p className="text-softgray dark:text-gray-400 text-base md:text-lg mb-8 max-w-2xl mx-auto">
-            One of the daily obligatory prayers — it is every Muslim's duty to perform it on time.
+            Current {waqtName} prayer timings for {userSettings.city}, {userSettings.country}. Perform your prayers on time for spiritual success.
           </p>
           
           <div className="inline-flex flex-wrap items-center justify-center gap-3 text-sm text-softgray dark:text-gray-400 font-semibold bg-gray-50/80 dark:bg-[#061C14]/50 px-6 py-2.5 rounded-full border border-gray-100 dark:border-primary-900">
@@ -78,15 +157,15 @@ export default function WaqtPage({ params }: { params: Promise<{ waqt: string }>
               onClick={() => setIsSettingsOpen(true)}
               className="flex items-center gap-2 cursor-pointer hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
             >
-              <i className="fa-solid fa-location-dot text-primary-500"></i> Dhaka, Bangladesh
+              <i className="fa-solid fa-location-dot text-primary-500"></i> {userSettings.city}, {userSettings.country}
             </span>
             <span className="text-gray-300 dark:text-primary-800">|</span>
             <span className="flex items-center gap-2">
-              <i className="fa-regular fa-calendar"></i> April 25, 2026
+              <i className="fa-regular fa-calendar"></i> {prayerData?.readableDate || '...'}
             </span>
             <span className="text-gray-300 dark:text-primary-800">|</span>
-            <span className="flex items-center gap-2">
-              <i className="fa-regular fa-moon"></i> 27 Shawwal, 1447
+            <span className="flex items-center gap-2 text-primary-700 dark:text-primary-400">
+              <i className="fa-regular fa-moon"></i> {prayerData?.hijriDate || '...'}
             </span>
           </div>
         </div>
@@ -108,13 +187,17 @@ export default function WaqtPage({ params }: { params: Promise<{ waqt: string }>
           <div className="grid grid-cols-2 divide-x divide-gray-100 dark:divide-primary-800/50 p-8 md:p-12">
             <div className="text-center px-4">
               <span className="text-softgray dark:text-gray-500 text-sm font-bold block mb-4 uppercase tracking-widest text-primary-600/70">Start Time</span>
-              <span className="text-5xl md:text-6xl font-bold text-primary-700 dark:text-primary-400 tracking-tight">3:30 <span className="text-2xl text-primary-500 dark:text-primary-600">PM</span></span>
-              <span className="text-softgray dark:text-gray-500 text-sm block mt-4 font-medium">After Dhuhr time ends</span>
+              <span className="text-5xl md:text-6xl font-bold text-primary-700 dark:text-primary-400 tracking-tight">
+                {loading ? '...' : start}
+              </span>
+              <span className="text-softgray dark:text-gray-500 text-sm block mt-4 font-medium">Exact {waqtName} entrance</span>
             </div>
             <div className="text-center px-4">
               <span className="text-softgray dark:text-gray-500 text-sm font-bold block mb-4 uppercase tracking-widest text-accent">End Time</span>
-              <span className="text-5xl md:text-6xl font-bold text-charcoal dark:text-white tracking-tight">6:22 <span className="text-2xl text-softgray dark:text-gray-500">PM</span></span>
-              <span className="text-softgray dark:text-gray-500 text-sm block mt-4 font-medium">Until sunset</span>
+              <span className="text-5xl md:text-6xl font-bold text-charcoal dark:text-white tracking-tight">
+                {loading ? '...' : end}
+              </span>
+              <span className="text-softgray dark:text-gray-500 text-sm block mt-4 font-medium">Before next prayer</span>
             </div>
           </div>
           

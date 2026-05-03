@@ -41,13 +41,20 @@ export default function WaqtDetailPage({ params }: { params: Promise<{ waqt: str
   const methodName = calculationMethods[userSettings.calculationMethod] || 'Karachi';
   const juristicName = userSettings.juristicMethod === '1' ? 'Hanafi' : 'Standard (Shafi, Maliki, Hambali)';
 
+  const [error, setError] = useState<string | null>(null);
+
   // Load settings from localStorage on mount
   useEffect(() => {
-    const savedSettings = localStorage.getItem('islamic-website-settings');
-    if (savedSettings) {
-      setUserSettings(JSON.parse(savedSettings));
+    try {
+      const savedSettings = localStorage.getItem('islamic-website-settings');
+      if (savedSettings) {
+        setUserSettings(JSON.parse(savedSettings));
+      }
+    } catch (e) {
+      console.error('Error loading settings:', e);
+    } finally {
+      setSettingsLoaded(true);
     }
-    setSettingsLoaded(true);
   }, []);
 
   const handleSettingsSave = (newSettings: any) => {
@@ -57,25 +64,39 @@ export default function WaqtDetailPage({ params }: { params: Promise<{ waqt: str
 
   useEffect(() => {
     if (!settingsLoaded) return;
+    
+    let isMounted = true;
     const fetchPrayerTimes = async () => {
       setLoading(true);
+      setError(null);
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-        const query = `city=${city}&country=${country}&school=${userSettings.juristicMethod}&method=${userSettings.calculationMethod}&tune=${userSettings.tune || ''}`;
+        // Clean city/country names
+        const cleanCity = city.replace(/-/g, ' ');
+        const cleanCountry = country.replace(/-/g, ' ');
+
+        const query = `city=${encodeURIComponent(cleanCity)}&country=${encodeURIComponent(cleanCountry)}&school=${userSettings.juristicMethod}&method=${userSettings.calculationMethod}&tune=${userSettings.tune || ''}`;
         const res = await fetch(`${apiUrl}/prayer-times?${query}`);
-        if (res.ok) {
-          const json = await res.json();
+        
+        if (!res.ok) throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
+        
+        const json = await res.json();
+        if (isMounted) {
+          if (!json || !json.timings) throw new Error('Invalid data received from server');
           setPrayerData(json);
         }
-      } catch (error) {
-        console.error('Error fetching prayer times:', error);
+      } catch (err: any) {
+        console.error('Error fetching prayer times:', err);
+        if (isMounted) setError(err.message);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
+
     fetchPrayerTimes();
-  }, [city, country, userSettings.juristicMethod, userSettings.calculationMethod, userSettings.tune]);
+    return () => { isMounted = false; };
+  }, [city, country, settingsLoaded, userSettings.juristicMethod, userSettings.calculationMethod, userSettings.tune]);
 
   const formatTime = (timeStr: string) => {
     if (!timeStr || timeStr === '--:--') return timeStr;
@@ -174,22 +195,38 @@ export default function WaqtDetailPage({ params }: { params: Promise<{ waqt: str
             </span>
           </div>
           
-          <div className="grid grid-cols-2 divide-x divide-gray-100 dark:divide-primary-800/50 p-8 md:p-12">
-            <div className="text-center px-4">
-              <span className="text-softgray dark:text-gray-500 text-sm font-bold block mb-4 uppercase tracking-widest text-primary-600/70">Start Time</span>
-              <span className="text-5xl md:text-6xl font-bold text-primary-700 dark:text-primary-400 tracking-tight">
-                {loading ? '...' : start}
-              </span>
-              <span className="text-softgray dark:text-gray-500 text-sm block mt-4 font-medium italic">Exact {waqtName} entrance</span>
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-8 text-center">
+              <i className="fa-solid fa-triangle-exclamation text-red-500 text-3xl mb-4"></i>
+              <p className="text-red-700 dark:text-red-400 font-bold mb-2">Failed to load prayer times</p>
+              <p className="text-red-600 dark:text-red-500 text-sm mb-4">{error}</p>
+              <button 
+                onClick={() => window.location.reload()}
+                className="bg-red-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-red-700 transition-colors"
+              >
+                Try Again
+              </button>
             </div>
-            <div className="text-center px-4">
-              <span className="text-softgray dark:text-gray-500 text-sm font-bold block mb-4 uppercase tracking-widest text-accent">End Time</span>
-              <span className="text-5xl md:text-6xl font-bold text-charcoal dark:text-white tracking-tight">
-                {loading ? '...' : end}
-              </span>
-              <span className="text-softgray dark:text-gray-500 text-sm block mt-4 font-medium italic">Before next prayer</span>
+          )}
+          
+          {!error && (
+            <div className="grid grid-cols-2 divide-x divide-gray-100 dark:divide-primary-800/50 p-8 md:p-12">
+              <div className="text-center px-4">
+                <span className="text-softgray dark:text-gray-500 text-sm font-bold block mb-4 uppercase tracking-widest text-primary-600/70">Start Time</span>
+                <span className="text-5xl md:text-6xl font-bold text-primary-700 dark:text-primary-400 tracking-tight">
+                  {loading ? '...' : start}
+                </span>
+                <span className="text-softgray dark:text-gray-500 text-sm block mt-4 font-medium italic">Exact {waqtName} entrance</span>
+              </div>
+              <div className="text-center px-4">
+                <span className="text-softgray dark:text-gray-500 text-sm font-bold block mb-4 uppercase tracking-widest text-accent">End Time</span>
+                <span className="text-5xl md:text-6xl font-bold text-charcoal dark:text-white tracking-tight">
+                  {loading ? '...' : end}
+                </span>
+                <span className="text-softgray dark:text-gray-500 text-sm block mt-4 font-medium italic">Before next prayer</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Back Link */}
