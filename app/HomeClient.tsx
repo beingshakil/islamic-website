@@ -180,7 +180,10 @@ export default function HomeClient({ initialHadith, initialDua, initialPrayerDat
         if (userSettings.locationType === 'auto' && "geolocation" in navigator) {
           try {
             const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+              navigator.geolocation.getCurrentPosition(resolve, reject, { 
+                timeout: 5000,
+                enableHighAccuracy: false // Faster detection for PCs
+              });
             });
             prayerQuery = `latitude=${position.coords.latitude}&longitude=${position.coords.longitude}&school=${userSettings.juristicMethod}&method=${userSettings.calculationMethod}&tune=${userSettings.tune || ''}`;
             
@@ -192,9 +195,10 @@ export default function HomeClient({ initialHadith, initialDua, initialPrayerDat
             
             usedGps = true;
           } catch (geoError: any) {
-            console.warn('Geolocation failed or denied:', geoError);
-            if (geoError.code === 1) setGpsLocation('Location permission denied');
-            else setGpsLocation('Detection failed (using fallback)');
+            console.warn('Geolocation failed or denied, using fallback:', geoError);
+            // Explicitly set the location label to show we are using the fallback
+            setGpsLocation('Location detection unavailable (using Bangladesh)');
+            // The prayerQuery remains the city/country default from userSettings
           }
         }
 
