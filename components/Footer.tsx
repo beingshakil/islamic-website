@@ -4,7 +4,7 @@ export default function Footer() {
   return (
     <footer className="relative bg-dark-green-gradient pt-20 pb-10 border-t-4 border-accent overflow-hidden">
       {/* Subtle background pattern overlay */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.04] bg-[url('/pattern.png')] bg-repeat z-0"></div>
+      <div className="absolute inset-0 pointer-events-none opacity-[0.04] bg-[url('/pattern.svg')] bg-repeat z-0"></div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         

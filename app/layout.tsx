@@ -19,7 +19,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`scroll-smooth ${inter.variable} ${amiri.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.png" type="image/png" />
+        <link rel="icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#3D7760" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -30,7 +30,7 @@ export default function RootLayout({
       </head>
       <body className="bg-background dark:bg-[#061C14] text-charcoal dark:text-gray-100 font-sans antialiased selection:bg-primary-500 selection:text-white flex flex-col min-h-screen transition-colors duration-300 relative bg-cream-gradient dark:bg-none" suppressHydrationWarning>
         {/* Subtle background pattern overlay */}
-        <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[url('/pattern.png')] bg-repeat z-0 mix-blend-multiply"></div>
+        <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[url('/pattern.svg')] bg-repeat z-0 mix-blend-multiply"></div>
         <div className="relative z-10 flex flex-col min-h-screen">
           <Navbar />
           <main className="flex-grow">

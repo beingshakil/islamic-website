@@ -181,24 +181,17 @@ export default function HomeClient({ initialHadith, initialDua, initialPrayerDat
           try {
             const position = await new Promise<GeolocationPosition>((resolve, reject) => {
               navigator.geolocation.getCurrentPosition(resolve, reject, { 
-                timeout: 5000,
-                enableHighAccuracy: false // Faster detection for PCs
+                timeout: 3000, // Reduced to 3s for snappier experience on PCs
+                enableHighAccuracy: false
               });
             });
             prayerQuery = `latitude=${position.coords.latitude}&longitude=${position.coords.longitude}&school=${userSettings.juristicMethod}&method=${userSettings.calculationMethod}&tune=${userSettings.tune || ''}`;
-            
-            if (prayerCache[prayerQuery]) {
-              setPrayerData(prayerCache[prayerQuery]);
-              setLoadingPrayer(false);
-              return;
-            }
-            
             usedGps = true;
           } catch (geoError: any) {
-            console.warn('Geolocation failed or denied, using fallback:', geoError);
-            // Explicitly set the location label to show we are using the fallback
-            setGpsLocation('Location detection unavailable (using Bangladesh)');
-            // The prayerQuery remains the city/country default from userSettings
+            console.warn('Geolocation failed, using default:', geoError.message);
+            // Fallback to manual settings (Dhaka by default)
+            prayerQuery = `city=${userSettings.city}&country=${userSettings.country}&school=${userSettings.juristicMethod}&method=${userSettings.calculationMethod}&tune=${userSettings.tune || ''}`;
+            setGpsLocation('Location not detected (using Dhaka)');
           }
         }
 
@@ -209,7 +202,9 @@ export default function HomeClient({ initialHadith, initialDua, initialPrayerDat
         setPrayerData(json);
         setPrayerCache(prev => ({ ...prev, [prayerQuery]: json }));
         
-        if (usedGps && json.city) setGpsLocation(`${json.city}, ${json.country || 'Bangladesh'}`);
+        if (usedGps) {
+          setGpsLocation(`${json.city || 'Detected'}, ${json.country || 'Bangladesh'}`);
+        }
       } catch (error) {
         console.error('Error fetching prayer times:', error);
       } finally {

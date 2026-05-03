@@ -105,7 +105,7 @@ export default function Navbar() {
                   
                   <div className="p-10 bg-cream-gradient dark:bg-none relative">
                      {/* Subtle Pattern */}
-                     <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.05] bg-[url('/pattern.png')] bg-repeat z-0 pointer-events-none mix-blend-multiply dark:mix-blend-overlay"></div>
+                     <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.05] bg-[url('/pattern.svg')] bg-repeat z-0 pointer-events-none mix-blend-multiply dark:mix-blend-overlay"></div>
                      
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10 relative z-10">
                       {/* Column 1 */}

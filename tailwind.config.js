@@ -38,7 +38,7 @@ module.exports = {
         }
       },
       backgroundImage: {
-        'islamic-pattern': "url('/pattern.png')",
+        'islamic-pattern': "url('/pattern.svg')",
         'cream-gradient': 'linear-gradient(135deg, #F8F6F1 0%, #FDFCF9 100%)',
         'dark-green-gradient': 'linear-gradient(135deg, #0A2B20 0%, #0F3D2E 100%)',
       }
