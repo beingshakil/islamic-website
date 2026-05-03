@@ -6,6 +6,21 @@ import SettingsModal from '@/components/SettingsModal';
 export default function WaqtPage({ params }: { params: Promise<{ waqt: string }> }) {
   const { waqt } = use(params);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [userSettings, setUserSettings] = useState({
+    locationType: 'auto',
+    country: 'Bangladesh',
+    city: 'Dhaka',
+    timeFormat: '12',
+    juristicMethod: '1',
+    calculationMethod: '1',
+    tune: ''
+  });
+
+  const handleSettingsSave = (newSettings: any) => {
+    setUserSettings(newSettings);
+    localStorage.setItem('islamic-website-settings', JSON.stringify(newSettings));
+  };
+
   const waqtName = waqt.charAt(0).toUpperCase() + waqt.slice(1);
 
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -35,7 +50,12 @@ export default function WaqtPage({ params }: { params: Promise<{ waqt: string }>
 
   return (
     <div className="bg-background dark:bg-[#061C14] min-h-screen pb-20 transition-colors duration-300">
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+        onSave={handleSettingsSave}
+        currentSettings={userSettings}
+      />
       
       {/* 1. TOP HEADER SECTION */}
       <section className="bg-white dark:bg-[#0A2B20] pt-12 pb-20 text-center border-b border-gray-100 dark:border-primary-900 shadow-[0_4px_20px_rgb(0,0,0,0.02)] relative overflow-hidden">

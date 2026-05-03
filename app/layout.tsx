@@ -20,7 +20,13 @@ export default function RootLayout({
     <html lang="en" className={`scroll-smooth ${inter.variable} ${amiri.variable}`} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.png" type="image/png" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#3D7760" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Deen" />
+        <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossOrigin="anonymous" referrerPolicy="no-referrer" />
       </head>
       <body className="bg-background dark:bg-[#061C14] text-charcoal dark:text-gray-100 font-sans antialiased selection:bg-primary-500 selection:text-white flex flex-col min-h-screen transition-colors duration-300 relative bg-cream-gradient dark:bg-none" suppressHydrationWarning>
         {/* Subtle background pattern overlay */}

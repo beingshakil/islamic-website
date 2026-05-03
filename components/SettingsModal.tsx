@@ -39,7 +39,8 @@ export default function SettingsModal({ isOpen, onClose, onSave, currentSettings
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
         const res = await fetch(`${apiUrl}/locations/countries`);
         const data = await res.json();
         setCountries(data);
@@ -56,7 +57,8 @@ export default function SettingsModal({ isOpen, onClose, onSave, currentSettings
     const fetchCities = async () => {
       setLoadingLocations(true);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
         const res = await fetch(`${apiUrl}/locations/cities?country=${selectedCountry}`);
         const data = await res.json();
         setCities(data);

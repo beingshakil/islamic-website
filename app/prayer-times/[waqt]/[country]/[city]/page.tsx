@@ -60,7 +60,8 @@ export default function WaqtDetailPage({ params }: { params: Promise<{ waqt: str
     const fetchPrayerTimes = async () => {
       setLoading(true);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
         const query = `city=${city}&country=${country}&school=${userSettings.juristicMethod}&method=${userSettings.calculationMethod}&tune=${userSettings.tune || ''}`;
         const res = await fetch(`${apiUrl}/prayer-times?${query}`);
         if (res.ok) {
