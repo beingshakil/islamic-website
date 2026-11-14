@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/LocaleLink';
 
 interface DailyInspirationProps {
   hadithData: any;
@@ -15,7 +15,7 @@ export default function DailyInspiration({ hadithData, duaData, loading }: Daily
           <span className="inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 text-xs font-bold uppercase tracking-[0.2em] mb-4">
             <i className="fa-solid fa-star-and-crescent text-[10px]"></i> Daily Inspiration
           </span>
-          <h2 className="font-bold text-3xl lg:text-4xl text-charcoal dark:text-white tracking-tight">Hadith of the Day</h2>
+          <h2 className="font-bold text-3xl lg:text-4xl text-charcoal dark:text-white tracking-tight">Daily Hadith &amp; Dua</h2>
           <div className="w-24 h-1 bg-accent/40 dark:bg-accent/60 mx-auto mt-6 rounded-full"></div>
         </div>
         

@@ -9,7 +9,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-        arabic: ['Amiri', 'serif'],
+        arabic: ['var(--font-amiri)', 'Amiri', 'serif'],
       },
       colors: {
         background: '#F8F6F1', // Warm off-white / cream

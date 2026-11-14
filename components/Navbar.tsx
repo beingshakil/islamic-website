@@ -1,11 +1,14 @@
 "use client";
 import { useState } from 'react';
-import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import Link, { useLocale } from '@/components/LocaleLink';
+import { LOCALES, LOCALE_LIST } from '@/utils/i18n';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
-  const [lang, setLang] = useState('EN');
+  const lang = useLocale();
+  const pathname = usePathname() || '/';
 
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -43,24 +46,24 @@ export default function Navbar() {
                 title="Language"
               >
                 <i className="fa-solid fa-globe text-base"></i>
-                <span className="text-sm font-medium">{lang}</span>
+                <span className="text-sm font-medium">{lang.toUpperCase()}</span>
                 <i className={`fa-solid fa-chevron-down text-[10px] transition-transform duration-200 ${isLangOpen ? 'rotate-180' : ''}`}></i>
               </button>
 
               {isLangOpen && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-36 bg-white dark:bg-gray-900 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100 dark:border-gray-800 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <button 
-                    onClick={() => { setLang('EN'); setIsLangOpen(false); }}
-                    className="w-full text-center px-4 py-3 text-sm font-semibold text-charcoal dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    English
-                  </button>
-                  <button 
-                    onClick={() => { setLang('BN'); setIsLangOpen(false); }}
-                    className="w-full text-center px-4 py-3 text-sm font-semibold text-charcoal dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    বাংলা (BN)
-                  </button>
+                  {LOCALE_LIST.map((code) => (
+                    <Link
+                      key={code}
+                      href={pathname}
+                      locale={code}
+                      hrefLang={code}
+                      onClick={() => setIsLangOpen(false)}
+                      className={`block w-full text-center px-4 py-3 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${code === lang ? 'text-primary-700 dark:text-primary-400' : 'text-charcoal dark:text-gray-200'}`}
+                    >
+                      {LOCALES[code].nativeName}{code !== 'en' ? ` (${code.toUpperCase()})` : ''}
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>
@@ -114,6 +117,7 @@ export default function Navbar() {
                           <h3 className="text-xs font-bold text-accent uppercase tracking-[0.15em] mb-5">Prayer Times</h3>
                           <ul className="space-y-4">
                             <li><Link href="/prayer-times" className="text-base font-medium text-charcoal dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 flex items-center gap-3 transition-colors group"><i className="fa-regular fa-clock text-primary-300 dark:text-primary-700 group-hover:text-primary-500 dark:group-hover:text-primary-500 w-4"></i> Prayer Times</Link></li>
+                            <li><Link href="/countries" className="text-base font-medium text-charcoal dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 flex items-center gap-3 transition-colors group"><i className="fa-solid fa-earth-asia text-primary-300 dark:text-primary-700 group-hover:text-primary-500 dark:group-hover:text-primary-500 w-4"></i> Prayer Times by Country</Link></li>
                             <li><Link href="/prayer-times/monthly" className="text-base font-medium text-charcoal dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 flex items-center gap-3 transition-colors group"><i className="fa-regular fa-calendar text-primary-300 dark:text-primary-700 group-hover:text-primary-500 dark:group-hover:text-primary-500 w-4"></i> Monthly Calendar</Link></li>
                             <li><Link href="/prayer-times/yearly" className="text-base font-medium text-charcoal dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 flex items-center gap-3 transition-colors group"><i className="fa-regular fa-calendar-days text-primary-300 dark:text-primary-700 group-hover:text-primary-500 dark:group-hover:text-primary-500 w-4"></i> Yearly Schedule</Link></li>
                           </ul>
@@ -137,7 +141,7 @@ export default function Navbar() {
                             <li><Link href="/tools/qibla" className="text-base font-medium text-charcoal dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 flex items-center gap-3 transition-colors group"><i className="fa-solid fa-compass text-primary-300 dark:text-primary-700 group-hover:text-primary-500 dark:group-hover:text-primary-500 w-4"></i> Qibla Direction</Link></li>
                             <li><Link href="/tools/zakat-calculator" className="text-base font-medium text-charcoal dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 flex items-center gap-3 transition-colors group"><i className="fa-solid fa-calculator text-primary-300 dark:text-primary-700 group-hover:text-primary-500 dark:group-hover:text-primary-500 w-4"></i> Zakat Calculator</Link></li>
                             <li><Link href="/tools/99-names" className="text-base font-medium text-charcoal dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 flex items-center gap-3 transition-colors group"><i className="fa-regular fa-gem text-primary-300 dark:text-primary-700 group-hover:text-primary-500 dark:group-hover:text-primary-500 w-4"></i> 99 Names of Allah</Link></li>
-                            <li><Link href="/tools/calendar" className="text-base font-medium text-charcoal dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 flex items-center gap-3 transition-colors group"><i className="fa-regular fa-calendar-check text-primary-300 dark:text-primary-700 group-hover:text-primary-500 dark:group-hover:text-primary-500 w-4"></i> Islamic Calendar</Link></li>
+                            <li><Link href="/calendar" className="text-base font-medium text-charcoal dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 flex items-center gap-3 transition-colors group"><i className="fa-regular fa-calendar-check text-primary-300 dark:text-primary-700 group-hover:text-primary-500 dark:group-hover:text-primary-500 w-4"></i> Islamic Calendar</Link></li>
                           </ul>
                         </div>
 

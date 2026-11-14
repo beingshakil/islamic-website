@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocaleLink';
 
 const resources = [
   {
@@ -25,7 +25,7 @@ const resources = [
     color: 'primary'
   },
   {
-    href: '/tools/calendar',
+    href: '/calendar',
     icon: 'fa-regular fa-calendar-days',
     title: 'Islamic Calendar',
     subtitle: 'Hijri dates & Events',

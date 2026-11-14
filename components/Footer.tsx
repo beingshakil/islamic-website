@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/LocaleLink';
 
 export default function Footer() {
   return (
@@ -72,7 +72,7 @@ export default function Footer() {
             <ul className="space-y-4 text-sm font-medium">
               <li><Link href="/prayer-times" className="text-primary-100 hover:text-white hover:translate-x-1 inline-block transition-all">Prayer Times Today</Link></li>
               <li><Link href="/prayer-times/monthly" className="text-primary-100 hover:text-white hover:translate-x-1 inline-block transition-all">Monthly Timetable</Link></li>
-              <li><Link href="/tools/calendar" className="text-primary-100 hover:text-white hover:translate-x-1 inline-block transition-all">Islamic Calendar</Link></li>
+              <li><Link href="/calendar" className="text-primary-100 hover:text-white hover:translate-x-1 inline-block transition-all">Islamic Calendar</Link></li>
               <li><Link href="/tools/zakat-calculator" className="text-primary-100 hover:text-white hover:translate-x-1 inline-block transition-all">Zakat Calculator</Link></li>
             </ul>
           </div>

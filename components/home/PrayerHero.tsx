@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocaleLink';
+import HijriDateLink from '@/components/HijriDateLink';
 import { formatTime } from '@/utils/time';
+import { cityPrayerTimesPath, waqtTimePath } from '@/utils/routes';
 
 interface PrayerHeroProps {
   prayerData: any;
@@ -37,17 +39,25 @@ export default function PrayerHero({
     return `${progress * 100}%`;
   };
 
+  const countryName = userSettings.country || 'Bangladesh';
+  const cityName = prayerData?.city || userSettings.city || 'Dhaka';
+
   return (
     <section id="prayer" className="relative py-12 lg:py-16">
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
+        {/* Page H1 (primary keyword) */}
+        <h1 className="text-3xl md:text-4xl font-bold text-charcoal dark:text-white tracking-tight text-center sm:text-left mb-6">
+          Prayer Times in {cityName} Today
+        </h1>
+
         {/* Breadcrumbs + Dates Row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between items-center text-center sm:text-left gap-4 mb-10">
           <div className="flex items-center justify-center sm:justify-start gap-2 text-primary-500 dark:text-primary-400 text-sm font-medium">
             <i className="fa-solid fa-location-dot"></i>
-            <span className="hover:text-primary-700 dark:hover:text-primary-300 cursor-pointer transition-colors">{prayerData?.country || 'Bangladesh'}</span>
+            <span className="hover:text-primary-700 dark:hover:text-primary-300 cursor-pointer transition-colors">{countryName}</span>
             <i className="fa-solid fa-chevron-right text-[10px] text-primary-300 dark:text-primary-600"></i>
-            <span className="text-charcoal dark:text-white font-bold">{prayerData?.city || 'Dhaka'}</span>
+            <Link href={cityPrayerTimesPath(countryName, cityName)} className="text-charcoal dark:text-white font-bold hover:text-primary-700 dark:hover:text-primary-300 transition-colors">{prayerData?.city || 'Dhaka'}</Link>
             <button 
               onClick={onOpenSettings}
               className="ml-3 w-7 h-7 bg-white dark:bg-[#0A2B20] shadow-sm border border-gray-100 dark:border-primary-800 hover:border-primary-300 dark:hover:border-primary-600 hover:text-primary-600 dark:hover:text-primary-400 rounded-full flex items-center justify-center transition-all text-softgray dark:text-gray-400" 
@@ -64,7 +74,7 @@ export default function PrayerHero({
             <span className="text-gray-300 dark:text-primary-800">|</span>
             <div className="flex items-center gap-1.5 sm:gap-2 text-softgray dark:text-gray-400">
               <i className="fa-regular fa-moon text-primary-400"></i>
-              <span className="font-medium text-charcoal dark:text-gray-200">{prayerData?.hijriDate || currentDate.hijri}</span>
+              <HijriDateLink country={countryName} fallback={prayerData?.hijriDate || currentDate.hijri} className="font-medium text-charcoal dark:text-gray-200" />
             </div>
           </div>
         </div>
@@ -91,7 +101,7 @@ export default function PrayerHero({
                 {timer.isGap ? timer.next : (timer.current || '...')}
               </p>
               <p className="text-softgray dark:text-gray-400 text-sm mb-8 font-medium">
-                {prayerData?.city || 'Dhaka'}, Bangladesh · Local time {mounted ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                {cityName}, {countryName} · Local time {mounted ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
               </p>
               
               <div className="bg-background dark:bg-[#061C14] rounded-2xl p-6 border border-gray-100/50 dark:border-primary-900/50 mb-6 relative overflow-hidden">
@@ -110,7 +120,7 @@ export default function PrayerHero({
               <div className="flex items-center justify-between text-sm pt-2">
                 <span className="text-softgray dark:text-gray-400 font-medium">Next: <span className="text-charcoal dark:text-white font-bold">{timer.next}</span></span>
                 <Link 
-                  href={`/prayer-times/${timer.next.toLowerCase()}/${(userSettings.country || 'bangladesh').toLowerCase().replace(/\s+/g, '-')}/${(prayerData?.city || userSettings.city || 'dhaka').toLowerCase().replace(/\s+/g, '-')}`}
+                  href={waqtTimePath(timer.next || 'fajr', countryName, cityName)}
                   className="text-softgray dark:text-gray-400 font-medium hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                 >
                   at <span className="text-charcoal dark:text-white font-bold">{timer.nextTime}</span>
@@ -150,9 +160,7 @@ export default function PrayerHero({
                   if (isCurrent && !isNonPrayer) badge = "NOW";
                   else if (isNext && timer.isGap) badge = "NEXT";
 
-                  const countrySlug = (userSettings.country || 'bangladesh').toLowerCase().replace(/\s+/g, '-');
-                  const citySlug = (prayerData?.city || userSettings.city || 'dhaka').toLowerCase().replace(/\s+/g, '-');
-                  const linkHref = `/prayer-times/${name.toLowerCase()}/${countrySlug}/${citySlug}`;
+                  const linkHref = waqtTimePath(name, countryName, cityName);
 
                   if (isCurrent || (isNext && timer.isGap)) {
                     return (
