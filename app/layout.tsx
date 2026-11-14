@@ -9,6 +9,9 @@ const amiri = Amiri({ weight: ['400', '700'], subsets: ['latin'], variable: '--f
 export const metadata = {
   title: 'PrayerTimes - Modern Islamic Portal',
   description: 'Comprehensive tools for your daily spiritual journey',
+  verification: {
+    google: 'mnSi0fkHu5d4LL7obu2GNzyLmfITDChr41chVVF2iXc',
+  },
 };
 
 export default function RootLayout({
